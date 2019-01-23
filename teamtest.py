@@ -1,5 +1,9 @@
 import random
 import numpy as np
+import pandas as pd
+
+WIN_VALUE = 750
+LOSS_VALUE = 250
 
 """
 Team is an object for each team in the tournament.
@@ -13,30 +17,27 @@ Team contains:
 """
 
 class Team(object):
-    def __init__(self, name, wins = 0, losses = 0): # Initiates a team, if no record is given default to empty
+    def __init__(self, name): # Initiates a team, if no record is given default to empty
         self.name = name
-        self.wins = wins
-        self.losses = losses
+        self.gamesWon = []
+        self.gamesLost = []
 
     def addGame(self, game): # Todo: Use new game type to be created
-        self.games +=  [game]
+        newgame =  [game]
+        if newgame.getWinner() == self:
+            self.gamesWon += [newgame]
+        else:
+            self.gamesLost += [newgame]
+        self.wins = len(gamesWon)
+        self.losses = len(gamesLost)
 
-    def updateScore(self):
-        totalScore = 0
-        gameCount = 0
-        for game in games:
-            ptdiff = game[1]
-            if ptdiff > 0:
-                totalScore += 750
-            else:
-                totalScore += 250
-
-        self.score = totalScore / gameCount
+    def initialScore(self):
+        self.score = (wins * WIN_VALUE + losses * LOSS_VALUE) / (wins + losses)
 
     def printteam(self):
         print "%s: %d - %d, %d" % (self.name, self.wins, self.losses, self.score)
 
-    def assignScore(self, score):
+    def setScore(self, score):
         self.score = score
 
     def getScore(self):
@@ -55,29 +56,29 @@ class Team(object):
 """
 Game is an object that contains information about one game played during the season.
 Contains:
-    homeTeam: a reference to the team object of the home team
-    awayTeam: a reference to the team object of the away team
-    homeBox: a numpy table containing the box score stats of the home team
-    awayBox: a numpy table containing the box score stats of the away team
+    team1: a reference to the team object of the first team
+    team2: a reference to the team object of the second team
+    box1: a pandas dataframe containing the box score stats of the first team
+    box2: a pandas dataframe containing the box score stats of the second team
+    home: the name of the home team
 """
 
 class Game(object):
-    def __init__(self, homeTeam, awayTeam, homeBox, awayBox):
-        self.homeTeam = homeTeam
-        self.awayTeam = awayTeam
-        self.homeBox = homeBox
-        self.awayBox = awayBox
-        self.homeTeam.addGame(self)
-        self.awayTeam.addGame(self)
+    def __init__(self, team1, team2, box1, box2, home):
+        self.team1 = team1
+        self.team2 = team2
+        self.box1 = box1
+        self.box2 = box2
+        self.team1.addGame(self) #Adds reference to game in both team objects
+        self.team2.addGame(self)
+        self.totals1 = {stat:box1[stat].sum() for stat in box1}
+        self.totals2 = {stat:box2[stat].sum() for stat in box2} #Keeps total game stats as library for easy access
 
+    def getWinner(self):
+        return self.team1.getName() if self.totals1['PTS'] > self.totals2['PTS'] else self.team2.getName()
 
-def generateteams(n): # Generates a number of random teams with winning records
-    teams = []
-    for i in range(1, n + 1):
-        teamname = "Team " + str(i)
-        wins = random.randint(11, 20)
-        teams.append(Team(teamname, wins, 20 - wins))
-    return teams
+    def getTotals(self):
+        return {team1.getName(): self.totals1, team2.getName(): self.totals2}
 
 def giveScores(teams): # Sets initial team strengths based on record
     wins = 0
@@ -89,9 +90,6 @@ def giveScores(teams): # Sets initial team strengths based on record
     for team in teams:
         winpct = float(team.getWins()) / (float(team.getWins()) + float(team.getLosses()))
         team.assignScore(((winpct / average) ** 2) * 500)
-
-def weightedScore(team): # Gives team a weighted score based on opponent strength
-    return
 
 def printteams(teams):
     for team in teams:
